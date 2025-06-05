@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>French SRS Flashcards</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>French Flashcards</h1>
+        <div class="flashcard" id="flashcard">
+            <div class="card-inner">
+                <div class="card-front" id="card-front">
+                    </div>
+                <div class="card-back" id="card-back">
+                    </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="showAnswerBtn">Show Answer</button>
+            <div class="rating-buttons" style="display: none;">
+                <button id="againBtn" class="rating-btn red">Again</button>
+                <button id="hardBtn" class="rating-btn orange">Hard</button>
+                <button id="partialBtn" class="rating-btn yellow">Partial</button> <button id="goodBtn" class="rating-btn green">Good</button>
+                <button id="easyBtn" class="rating-btn blue">Easy</button>
+            </div>
+        </div>
+
+        <p class="cards-remaining" id="cardsRemaining"></p>
+        <button id="addCardBtn">Add New Card</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

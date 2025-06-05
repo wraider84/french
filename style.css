@@ -1,0 +1,149 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #f4f7f6;
+    color: #333;
+    padding: 20px;
+    box-sizing: border-box; /* Include padding in element's total width and height */
+}
+
+.container {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    text-align: center;
+    width: 100%;
+    max-width: 500px;
+}
+
+h1 {
+    color: #2c3e50;
+    margin-bottom: 30px;
+    font-size: 2em;
+}
+
+.flashcard {
+    background-color: #ecf0f1;
+    border: 1px solid #bdc3c7;
+    border-radius: 10px;
+    margin: 20px auto;
+    width: 90%;
+    max-width: 400px;
+    height: 200px; /* Fixed height for flashcard */
+    perspective: 1000px; /* For 3D flip effect */
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #34495e;
+}
+
+.card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+
+.flashcard.flipped .card-inner {
+    transform: rotateY(180deg);
+}
+
+.card-front, .card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden; /* Hide the back of the card when flipped */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow: hidden; /* Prevent content from overflowing during flip */
+}
+
+.card-back {
+    transform: rotateY(180deg);
+    background-color: #c7e9ed; /* Slightly different background for the back */
+}
+
+.controls {
+    margin-top: 20px;
+}
+
+button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1em;
+    margin: 5px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+.rating-buttons button {
+    padding: 10px 20px; /* Slightly smaller for rating buttons */
+    font-size: 1em;
+}
+
+.rating-btn.red { background-color: #e74c3c; }
+.rating-btn.red:hover { background-color: #c0392b; }
+.rating-btn.orange { background-color: #f39c12; }
+.rating-btn.orange:hover { background-color: #e67e22; }
+.rating-btn.green { background-color: #2ecc71; }
+.rating-btn.green:hover { background-color: #27ae60; }
+.rating-btn.blue { background-color: #3498db; } /* Keeping blue for Easy */
+.rating-btn.blue:hover { background-color: #2980b9; }
+
+.cards-remaining {
+    margin-top: 20px;
+    font-size: 0.9em;
+    color: #7f8c8d;
+}
+
+#addCardBtn {
+    margin-top: 20px;
+    background-color: #9b59b6;
+}
+
+#addCardBtn:hover {
+    background-color: #8e44ad;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .container {
+        padding: 20px;
+    }
+    .flashcard {
+        height: 180px;
+        font-size: 1.3em;
+    }
+    button {
+        padding: 10px 20px;
+        font-size: 1em;
+    }
+    .rating-buttons button {
+        padding: 8px 15px;
+        font-size: 0.9em;
+    }
+}
+/* Add this to your style.css */
+.rating-btn.yellow { background-color: #f1c40f; } /* Yellow for Partial */
+.rating-btn.yellow:hover { background-color: #f39c12; }
