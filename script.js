@@ -271,11 +271,12 @@ showAnswerBtn.addEventListener('click', () => {
 });
 
 ratingButtons.addEventListener('click', (event) => {
-    if (!currentCard) return;
+    if (!currentCard) return; // Ensure there's a current card to avoid errors
 
     const button = event.target.closest('.rating-btn');
-    if (!button) return;
+    if (!button) return; // Exit if a non-button element was clicked inside the container
 
+    // Determine the quality score based on the clicked button's ID
     let quality;
     if (button.id === 'againBtn') quality = 0;
     else if (button.id === 'hardBtn') quality = 1;
@@ -283,22 +284,60 @@ ratingButtons.addEventListener('click', (event) => {
     else if (button.id === 'goodBtn') quality = 3;
     else if (button.id === 'easyBtn') quality = 4;
 
+    // Apply the SM-2 algorithm to update the current card's properties (interval, easeFactor, repetitions)
     sm2Algorithm(currentCard, quality);
     
+    // Find the current card in your main 'cards' array by its ID
     const existingCardIndex = cards.findIndex(c => c.id === currentCard.id);
     if (existingCardIndex !== -1) {
+        // If found, update its details with the newly calculated SRS properties
         cards[existingCardIndex] = currentCard;
     } else {
+        // This case should ideally not happen if cards are loaded correctly, but it's a safeguard
         cards.push(currentCard); 
     }
 
+    // Save all cards (with the updated currentCard) back to local storage
     saveCards();
 
+    // If the card was rated 'Again', 'Hard', or 'Partial' (quality < 3),
+    // push it back to the reviewQueue so it can be reviewed again sooner.
     if (quality < 3) {
         reviewQueue.push(currentCard);
     }
     
-    displayNextCard();
+    // --- START OF NEW LOGIC FOR FLIPPING CURRENT CARD & DISPLAYING NEXT CARD ---
+
+    // 1. Immediately flip the current card back to its front side
+    // This allows the user to briefly see the front of the card they just reviewed.
+    flashcard.classList.remove('flipped'); 
+    
+    // 2. Introduce a small delay before proceeding to the next card.
+    // This pause gives a better visual transition and user experience.
+    setTimeout(() => {
+        // 3. Re-evaluate which cards are due for review today.
+        // This is important because the 'currentCard' just had its review date updated.
+        getCardsToReviewToday(); 
+
+        // 4. Check if there are any cards left in the review queue.
+        if (reviewQueue.length === 0) {
+            // If no more cards are left for today, display the "All done" message.
+            cardFront.textContent = "All done for today!";
+            cardBack.textContent = "Come back later for new cards or add more!";
+            flashcard.style.cursor = 'default';      // Change cursor
+            showAnswerBtn.style.display = 'none';    // Hide "Show Answer" button
+            ratingButtons.style.display = 'none';    // Hide rating buttons
+            flashcard.classList.remove('flipped');   // Ensure the "All done" message stays on the front
+        } else {
+            // If there are cards left, get the next card from the queue.
+            currentCard = reviewQueue.shift(); 
+            // Display the next card. The 'displayNextCard' function already ensures
+            // the card starts on its front, which is perfect for this flow.
+            displayNextCard(); 
+        }
+    }, 300); // 300 milliseconds delay (0.3 seconds). You can adjust this value.
+
+    // --- END OF NEW LOGIC ---
 });
 
 addCardBtn.addEventListener('click', () => {
