@@ -12,7 +12,14 @@ const partialBtn = document.getElementById('partialBtn');
 const goodBtn = document.getElementById('goodBtn');
 const easyBtn = document.getElementById('easyBtn');
 const cardsRemainingText = document.getElementById('cardsRemaining');
-const addCardBtn = document.getElementById('addCardBtn'); // We'll keep this for adding new cards via UI
+const addCardBtn = document.getElementById('addCardBtn');
+
+// --- NEW STATS DOM Elements ---
+const sessionReviewedCountText = document.getElementById('sessionReviewedCount');
+const newCardsCountText = document.getElementById('newCardsCount');
+const learningCardsCountText = document.getElementById('learningCardsCount');
+const matureCardsCountText = document.getElementById('matureCardsCount');
+const totalCardsCountText = document.getElementById('totalCardsCount');
 
 
 // --- Card Data Structure ---
@@ -21,22 +28,24 @@ const addCardBtn = document.getElementById('addCardBtn'); // We'll keep this for
 //     front: 'French phrase',
 //     back: 'English translation',
 //     lastReviewed: null, // Date object or timestamp of last review
-//     interval: 0,       // Days until next review
-//     easeFactor: 2.5,   // From SM-2 algorithm, how easy it is (starts at 2.5)
-//     repetitions: 0     // Consecutive correct recalls
+//     interval: 0,        // Days until next review
+//     easeFactor: 2.5,    // From SM-2 algorithm, how easy it is (starts at 2.5)
+//     repetitions: 0      // Consecutive correct recalls
 // }
 
 let cards = []; // Array to hold all flashcards (merged from CSV and localStorage)
-let currentCardIndex = -1;
-let reviewQueue = [];
-let currentCard = null;
+let currentCardIndex = -1; // Not strictly used with reviewQueue.shift()
+let reviewQueue = []; // Cards currently due for review
+let currentCard = null; // The card currently being displayed
+
+let sessionReviewedCount = 0; // NEW: Counter for cards reviewed in the current session
 
 const CSV_FILE_PATH = 'cards.csv'; // Define the path to your CSV file
 
 // --- SM-2 Algorithm Implementation (Modified for 5 qualities) ---
 // quality: 0 (Again), 1 (Hard), 2 (Partial), 3 (Good), 4 (Easy)
 function sm2Algorithm(card, quality) {
-    quality = Math.max(0, Math.min(4, quality)); 
+    quality = Math.max(0, Math.min(4, quality));
 
     if (quality >= 3) { // Good or Easy
         card.repetitions++;
@@ -48,12 +57,12 @@ function sm2Algorithm(card, quality) {
         } else {
             card.interval = Math.round(card.interval * card.easeFactor);
         }
-        
+
         card.easeFactor += (0.1 - (4 - quality) * (0.08 + (4 - quality) * 0.02));
-        
+
     } else { // Incorrect or barely remembered (Again, Hard, Partial)
         // For "Again" (0) or "Hard" (1)
-        if (quality <= 1) { 
+        if (quality <= 1) {
              card.repetitions = 0;
              card.interval = 1;
         } else if (quality === 2) { // If "Partial"
@@ -92,15 +101,12 @@ function parseCSV(csvText) {
             cardData[headers[j]] = values[j].trim(); // Assign value to corresponding header
         }
 
-        // We only care about 'front' and 'back' for now.
-        // We'll generate the SRS properties if the card is new or from CSV
         if (cardData.front && cardData.back) {
              parsedCards.push({
-                front: cardData.front,
-                back: cardData.back,
-                // These will be merged with localStorage data
-                // id, lastReviewed, interval, easeFactor, repetitions will be added/preserved by loadCards
-            });
+                 front: cardData.front,
+                 back: cardData.back,
+                 // id, lastReviewed, interval, easeFactor, repetitions will be added/preserved by loadCards
+             });
         }
     }
     return parsedCards;
@@ -197,7 +203,7 @@ function loadCardsFromLocalStorage() {
         });
     } else {
         // No cards in localStorage, and CSV load failed, so start with an empty set
-        cards = []; 
+        cards = [];
         console.warn("No CSV loaded and no cards found in local storage. Start by adding a new card.");
     }
 }
@@ -218,58 +224,83 @@ function getCardsToReviewToday() {
         return nextReviewDate.setHours(0, 0, 0, 0) <= today;
     });
 
-    reviewQueue.sort(() => Math.random() - 0.5);
-    updateCardsRemainingDisplay();
+    reviewQueue.sort(() => Math.random() - 0.5); // Randomize the queue
+    updateCardsRemainingDisplay(); // Update cards remaining text
 }
 
 function displayNextCard() {
-    if (flashcard.classList.contains('flipped')) {
-        flashcard.classList.remove('flipped');
-    }
-    showAnswerBtn.style.display = 'block';
-    ratingButtons.style.display = 'none';
+    // Ensure the card is not flipped when a new one is loaded/displayed
+    flashcard.classList.remove('flipped');
+
+    showAnswerBtn.style.display = 'block'; // Show "Show Answer" button
+    ratingButtons.style.display = 'none'; // Hide rating buttons
 
     if (reviewQueue.length === 0) {
         cardFront.textContent = "All done for today!";
         cardBack.textContent = "Come back later for new cards or add more!";
-        flashcard.style.cursor = 'default';
-        showAnswerBtn.style.display = 'none';
-        return;
+        flashcard.style.cursor = 'default'; // Change cursor
+        showAnswerBtn.style.display = 'none'; // Hide "Show Answer"
+        return; // Exit as no cards to display
     }
 
-    currentCard = reviewQueue.shift();
-    cardFront.textContent = currentCard.front;
-    cardBack.textContent = currentCard.back;
-    updateCardsRemainingDisplay();
+    currentCard = reviewQueue.shift(); // Get the next card from the queue
+    cardFront.textContent = currentCard.front; // Set front content
+    cardBack.textContent = currentCard.back; // Set back content
+    updateCardsRemainingDisplay(); // Update cards remaining text
 }
 
 function updateCardsRemainingDisplay() {
     cardsRemainingText.textContent = `Cards to review: ${reviewQueue.length}`;
 }
 
+// --- NEW FUNCTION: Update Stats Display ---
+function updateStatsDisplay() {
+    sessionReviewedCountText.textContent = sessionReviewedCount; // Update cards reviewed in session
+
+    // Categorize all cards for overall progress
+    const newCards = cards.filter(card => card.repetitions === 0);
+    // Learning cards: have been reviewed at least once but interval is still relatively short (e.g., less than 30 days)
+    const learningCards = cards.filter(card =>
+        card.repetitions > 0 && card.interval < 30
+    );
+    // Mature cards: have a sufficiently long interval (e.g., 30 days or more)
+    const matureCards = cards.filter(card =>
+        card.interval >= 30
+    );
+
+    newCardsCountText.textContent = newCards.length;
+    learningCardsCountText.textContent = learningCards.length;
+    matureCardsCountText.textContent = matureCards.length;
+    totalCardsCountText.textContent = cards.length; // Total cards loaded in the system
+}
+
+
 // --- Event Listeners ---
 
+// Flashcard click to flip
 flashcard.addEventListener('click', () => {
-    if (currentCard) {
+    if (currentCard) { // Only flip if there's a card displayed
         flashcard.classList.toggle('flipped');
         if (flashcard.classList.contains('flipped')) {
-            showAnswerBtn.style.display = 'none';
-            ratingButtons.style.display = 'flex';
+            showAnswerBtn.style.display = 'none'; // Hide "Show Answer" when flipped
+            ratingButtons.style.display = 'flex'; // Show rating buttons
         } else {
-            showAnswerBtn.style.display = 'block';
-            ratingButtons.style.display = 'none';
+            showAnswerBtn.style.display = 'block'; // Show "Show Answer" when not flipped
+            ratingButtons.style.display = 'none'; // Hide rating buttons
         }
     }
 });
 
+// "Show Answer" button click
 showAnswerBtn.addEventListener('click', () => {
-    if (currentCard) {
-        flashcard.classList.add('flipped');
-        showAnswerBtn.style.display = 'none';
-        ratingButtons.style.display = 'flex';
+    if (currentCard) { // Only show answer if a card is displayed
+        flashcard.classList.add('flipped'); // Force flip to back
+        showAnswerBtn.style.display = 'none'; // Hide "Show Answer" button
+        ratingButtons.style.display = 'flex'; // Show rating buttons
     }
 });
 
+// Rating buttons container click (delegated listener)
 ratingButtons.addEventListener('click', (event) => {
     if (!currentCard) return; // Ensure there's a current card to avoid errors
 
@@ -302,7 +333,7 @@ ratingButtons.addEventListener('click', (event) => {
 
     // If the card was rated 'Again', 'Hard', or 'Partial' (quality < 3),
     // push it back to the reviewQueue so it can be reviewed again sooner.
-    if (quality < 3) {
+    if (quality < 3) { // 0=Again, 1=Hard, 2=Partial
         reviewQueue.push(currentCard);
     }
     
@@ -315,6 +346,9 @@ ratingButtons.addEventListener('click', (event) => {
     // 2. Introduce a small delay before proceeding to the next card.
     // This pause gives a better visual transition and user experience.
     setTimeout(() => {
+        sessionReviewedCount++; // Increment count for cards reviewed in this session
+        updateStatsDisplay();   // Update all stat numbers
+        
         // 3. Re-evaluate which cards are due for review today.
         // This is important because the 'currentCard' just had its review date updated.
         getCardsToReviewToday(); 
@@ -335,11 +369,12 @@ ratingButtons.addEventListener('click', (event) => {
             // the card starts on its front, which is perfect for this flow.
             displayNextCard(); 
         }
-    }, 500); // 500 milliseconds delay (0.5 seconds). You can adjust this value.
+    }, 300); // 300 milliseconds delay (0.3 seconds). You can adjust this value.
 
     // --- END OF NEW LOGIC ---
 });
 
+// "Add New Card" button click
 addCardBtn.addEventListener('click', () => {
     const newFront = prompt("Enter the French word/phrase:");
     if (newFront === null || newFront.trim() === "") return;
@@ -367,16 +402,18 @@ addCardBtn.addEventListener('click', () => {
         easeFactor: 2.5,
         repetitions: 0
     };
-    cards.push(newCard);
-    saveCards();
-    getCardsToReviewToday(); // Re-populate queue to include the new card
-    displayNextCard();
+    cards.push(newCard); // Add the new card to the main cards array
+    saveCards(); // Save all cards to local storage
+    getCardsToReviewToday(); // Re-populate queue to include the new card (if due)
+    displayNextCard(); // Display the next card (might be the new one if due)
+    updateStatsDisplay(); // Update stats to reflect the new card count
 });
 
 
 // --- Initialization ---
-document.addEventListener('DOMContentLoaded', async () => { // Made async to await CSV load
+document.addEventListener('DOMContentLoaded', async () => {
     await loadCards(); // Await the loading of cards from CSV and localStorage
-    getCardsToReviewToday();
-    displayNextCard();
+    getCardsToReviewToday(); // Populate the review queue
+    displayNextCard(); // Display the first card
+    updateStatsDisplay(); // Call this to show initial stats
 });
