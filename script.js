@@ -31,7 +31,7 @@ let currentCardIndex = -1;
 let reviewQueue = [];
 let currentCard = null;
 
-const CSV_FILE_PATH = 'french/cards.csv'; // Define the path to your CSV file
+const CSV_FILE_PATH = 'cards.csv'; // Define the path to your CSV file
 
 // --- SM-2 Algorithm Implementation (Modified for 5 qualities) ---
 // quality: 0 (Again), 1 (Hard), 2 (Partial), 3 (Good), 4 (Easy)
