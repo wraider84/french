@@ -335,7 +335,7 @@ ratingButtons.addEventListener('click', (event) => {
             // the card starts on its front, which is perfect for this flow.
             displayNextCard(); 
         }
-    }, 300); // 300 milliseconds delay (0.3 seconds). You can adjust this value.
+    }, 500); // 500 milliseconds delay (0.5 seconds). You can adjust this value.
 
     // --- END OF NEW LOGIC ---
 });
